@@ -9,7 +9,7 @@ def ofx_to_dataframe(ofx_file):
 
     transactions = ofx.account.statement.transactions
 
-    df = pd.DataFrame([t.__dict__ for t in transactionsiii])
+    df = pd.DataFrame([t.__dict__ for t in transactions])
 
     return df
 
