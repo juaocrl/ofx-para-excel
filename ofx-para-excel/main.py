@@ -13,8 +13,9 @@ def ofx_to_dataframe(ofx_file, banco, nome_banco):
     # Criar o DataFrame com as colunas desejadas e preencher os valores
     data = []
     for t in transactions:
-        debito = banco if t.type == "credit" else ""
-        credito = banco if t.type == "debit" else ""
+        
+        debito = banco if t.amount >= -1 else ""
+        credito = banco if t.amount <= -1 else ""
         data.append({
             "debito": debito,
             "credito": credito,
