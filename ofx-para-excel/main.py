@@ -1,8 +1,9 @@
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
+from PIL import ImageTk, Image
 from ofxparse import OfxParser
 import pandas as pd
-import os
+from datetime import datetime
 
 def ofx_to_dataframe(ofx_file, banco, nome_banco):
     with open(ofx_file, 'rb') as f:
@@ -10,65 +11,90 @@ def ofx_to_dataframe(ofx_file, banco, nome_banco):
 
     transactions = ofx.account.statement.transactions
 
-    # Criar o DataFrame com as colunas desejadas e preencher os valores
     data = []
     for t in transactions:
         
         debito = banco if t.amount >= -1 else ""
         credito = banco if t.amount <= -1 else ""
+        tipocred = ()
+        if t.amount <= -1 :
+            tipocred= "deb"
+        else: 
+            tipocred= "cred"
+        
+        excel_date = t.date.toordinal() - datetime(1899, 12, 30).toordinal()
+        
         data.append({
             "debito": debito,
             "credito": credito,
-            "data": t.date.strftime("%d/%m/%Y"),  # Formatar a data como dd/mm/aaaa
-            "valor": str(t.amount).replace(".", ","),  # Substituir ponto por vírgula
+            "data": excel_date,
+            "valor": str(t.amount).replace(".", ","),
             "codigo do historico": "",
             "n.documento": "",
-            "nome do emitente": (t.type + " C/C " + nome_banco).upper(),  # Converter para caixa alta
-            "complemento do historico": t.memo.upper(),  # Converter para caixa alta
-            "historico total": (t.type + " " + nome_banco + " " + t.memo).upper(),  # Converter para caixa alta
+            "nome do emitente": (tipocred + " C/C " + nome_banco).upper(),
+            "complemento do historico": t.memo.upper(),
+            "historico total": (tipocred + " c/c " + nome_banco + " " + t.memo).upper(),
         })
 
     df = pd.DataFrame(data)
-
     return df
 
-def main():
-    root = tk.Tk()
-    root.withdraw()  # Ocultar a janela principal do tkinter
-    banco = input("Insira o número do banco cadastrado no plano de contas: ")
-    nome_banco = input("Insira o nome do banco: ")
+def process_ofx_files():
+    banco = entry_numero_banco.get()
+    nome_banco = entry_nome_banco.get()
     
-    # Abrir uma caixa de diálogo para selecionar os arquivos OFX
-    ofx_files = filedialog.askopenfilenames(title="Selecione os arquivos OFX", filetypes=[("Arquivos OFX", "*.ofx")])
-
-    if not ofx_files:
-        print("Nenhum arquivo selecionado. Encerrando o programa.")
+    if not banco or not nome_banco:
+        messagebox.showwarning("Entrada inválida", "Por favor, preencha todos os campos.")
         return
 
-    # Inicializar uma lista para armazenar os DataFrames de cada arquivo
+    ofx_files = filedialog.askopenfilenames(title="Selecione os arquivos OFX", filetypes=[("Arquivos OFX", "*.ofx")])
+    if not ofx_files:
+        messagebox.showinfo("Nenhum arquivo", "Nenhum arquivo selecionado. Encerrando o programa.")
+        return
+
     dfs = []
-    
     for ofx_file in ofx_files:
-        # Converter o arquivo OFX em um DataFrame
         df = ofx_to_dataframe(ofx_file, banco, nome_banco)
         dfs.append(df)
 
-    # Concatenar todos os DataFrames em um único DataFrame
     combined_df = pd.concat(dfs, ignore_index=True)
-
-    # Renomear as colunas conforme necessário
     combined_df = combined_df[["debito", "credito", "data", "valor", "codigo do historico", "n.documento", "nome do emitente", "complemento do historico", "historico total"]]
 
-    # Abrir uma caixa de diálogo para selecionar onde salvar a planilha
     save_file = filedialog.asksaveasfilename(title="Salvar a planilha como", defaultextension=".xlsx", filetypes=[("Arquivos Excel", "*.xlsx")])
-
     if not save_file:
-        print("Nenhum local de salvamento selecionado. Encerrando o programa.")
+        messagebox.showinfo("Nenhum local de salvamento", "Nenhum local de salvamento selecionado. Encerrando o programa.")
         return
 
-    # Exportar o DataFrame modificado para o local de salvamento escolhido (Excel)
-    combined_df.to_excel(save_file, index=False)
-    print(f"Arquivo Excel salvo em {save_file}")
+    try:
+        combined_df.to_excel(save_file, index=False)
+        messagebox.showinfo("Sucesso", f"Arquivo Excel salvo em {save_file}")
+    except PermissionError:
+        messagebox.showerror("Erro de Permissão", f"Não foi possível salvar o arquivo em {save_file}. Tente um local diferente.")
+
+def main():
+    tela = tk.Tk()
+    tela.title("Conversor OFX para Excel")
+    tela.resizable(False, False)
+    tela.iconbitmap("logo_cadasto.ico")
+
+    # Layout
+    tk.Label(tela, text="Número do Banco:").grid(row=0, column=0, padx=10, pady=10)
+    global entry_numero_banco
+    entry_numero_banco = tk.Entry(tela)
+    entry_numero_banco.grid(row=0, column=1, padx=10, pady=10)
+
+    tk.Label(tela, text="Nome do Banco:").grid(row=1, column=0, padx=10, pady=10)
+    global entry_nome_banco
+    entry_nome_banco = tk.Entry(tela)
+    entry_nome_banco.grid(row=1, column=1, padx=10, pady=10)
+
+    btn_processar = tk.Button(tela, text="Selecionar e Processar Arquivos OFX", command=process_ofx_files)
+    btn_processar.grid(row=2, column=0, columnspan=2, padx=10, pady=20)
+
+    tela.mainloop()
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        messagebox.showerror("Erro", f"Não foi possível rodar: {e}")
