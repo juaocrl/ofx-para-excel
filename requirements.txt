@@ -1,0 +1,4 @@
+ofxparse
+pandas
+openpyxl
+Pillow
