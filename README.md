@@ -79,7 +79,7 @@ eficiente.
 
 ``` bash
 # 1. Baixe o repositório
-git clone https://github.com/SEU_USUARIO/ofx-para-excel.git
+git clone https://github.com/****/ofx-para-excel.git
 
 # 2. Entre na pasta
 cd ofx-para-excel
@@ -103,82 +103,95 @@ python main.py
 ## 🖥 Como Usar
 
 1. Abra o aplicativo.  
-2. Insira:
-   - **Número do Banco** (código do plano de contas vinculado à conta bancária)
-   - **Nome do Banco**
-3. Clique em **Selecionar e Processar Arquivos OFX**.
-4. Escolha os arquivos `.ofx`.
-5. Escolha onde salvar.
-6. O Excel será gerado automaticamente 🎉
+2. Informe:
+   - **Número do Banco** → código do plano de contas da conta bancária  
+   - **Nome do Banco**  
+3. Clique em **Selecionar e Processar Arquivos OFX**  
+4. Selecione os arquivos `.ofx`  
+5. Escolha onde salvar  
+6. Pronto! A planilha será gerada automaticamente   
 
-
-------------------------------------------------------------------------
+---
 
 ## 📁 Estrutura do Projeto
 
-    ofx-para-excel/
-    │
-    ├── main.py              
-    ├── requirements.txt     
-    ├── fundo.png            
-    ├── logo_cadasto.ico     
-    └── README.md            
+```
+ofx-para-excel/
+│
+├── main.py
+├── requirements.txt
+├── fundo.png
+├── logo_cadasto.ico
+└── README.md
+```
 
-------------------------------------------------------------------------
+---
 
 ## 🔎 Processamento dos Arquivos OFX
 
-Cada transação OFX é convertida seguindo a lógica:
+A lógica segue o padrão **contábil**, não bancário:
 
-| Campo               | Regra                                                                 |
-|---------------------|------------------------------------------------------------------------|
-| **debito / credito** | Determinado pelo valor da transação (positivo = crédito / negativo = débito). |
-| **data**              | Convertida para o número serial de data do Excel.                     |
-| **valor**             | Formatação contábil brasileira (vírgula como separador decimal).      |
-| **emitente**          | `"cred/deb C/C {nome_banco}"` conforme o tipo da transação.           |
-| **complemento**       | Conteúdo original do campo `memo` do arquivo OFX.                     |
-| **histórico total**   | Combinação automática de tipo + banco + memo.                         |
+| Campo               | Regra |
+|---------------------|-------|
+| **débito**          | Valores **positivos** (entradas no banco) |
+| **crédito**         | Valores **negativos** (saídas do banco) |
+| **data**            | Convertida para o número serial do Excel |
+| **valor**           | Formato brasileiro (vírgula) |
+| **nome do emitente**| `DEB C/C {banco}` ou `CRED C/C {banco}` conforme o tipo |
+| **complemento**     | Texto original do campo `memo` |
+| **histórico total** | Montagem automática (tipo + banco + memo) |
 
-------------------------------------------------------------------------
+---
 
 ## 🧾 Exemplo Completo de Conversão
 
-### 🔠 1. Transação original no arquivo OFX
+### 1. Transação original no OFX
 
-    Data: 2024-10-05
-    Valor: -150.75
-    Memo: PAGAMENTO MERCADO LIVRE
+```
+Data: 2024-10-05
+Valor: -150.75
+Memo: PAGAMENTO MERCADO LIVRE
+```
 
-Informações inseridas pelo usuário:
+Informações do usuário:
 
--   **Número do Banco:** 111
--   **Nome do Banco:** ITAÚ
+- Número do Banco: **111**
+- Nome do Banco: **ITAÚ**
 
-------------------------------------------------------------------------
+---
 
-## 🔄 2. Processamento interno da transação
+## 🔄 2. Processamento contábil
 
-| Campo                     | Resultado                          |
-|---------------------------|-------------------------------------|
-| Tipo                      | débito (valor negativo)             |
-| debito                    | 111                                 |
-| credito                   | *(vazio)*                           |
-| data                      | 45620 (serial Excel)                |
-| valor                     | -150,75                             |
-| nome do emitente          | DEB C/C ITAÚ                        |
-| complemento do histórico  | PAGAMENTO MERCADO LIVRE             |
-| histórico total           | DEB C/C ITAÚ PAGAMENTO MERCADO LIVRE |
+Valor negativo → **CRÉDITO** (saída)
 
-------------------------------------------------------------------------
+| Campo                    | Resultado                          |
+|--------------------------|-------------------------------------|
+| débito                   | *(vazio)*                           |
+| crédito                  | 111                                 |
+| data                     | 45620                               |
+| valor                    | -150,75                             |
+| nome do emitente         | CRED C/C ITAÚ                       |
+| complemento do histórico | PAGAMENTO MERCADO LIVRE             |
+| histórico total          | CRED C/C ITAÚ PAGAMENTO MERCADO LIVRE |
 
+---
 
- ## 📊 3. Resultado final na planilha Excel
+## 📊 3. Resultado final no Excel
 
-| debito | credito | data  | valor   | codigo do historico | n.documento | nome do emitente | complemento do historico     | historico total                                |
-|--------|---------|--------|---------|----------------------|--------------|------------------|-------------------------------|------------------------------------------------|
-| 111    |         | 45620  | -150,75 |                      |              | DEB C/C ITAÚ     | PAGAMENTO MERCADO LIVRE       | DEB C/C ITAÚ PAGAMENTO MERCADO LIVRE          |
+| debito | credito | data  | valor   | codigo do historico | n.documento | nome do emitente | complemento do historico | historico total                         |
+|--------|---------|--------|---------|----------------------|--------------|------------------|---------------------------|-----------------------------------------|
+|        | 111     | 45620  | -150,75 |                      |              | CRED C/C ITAÚ    | PAGAMENTO MERCADO LIVRE   | CRED C/C ITAÚ PAGAMENTO MERCADO LIVRE  |
 
-------------------------------------------------------------------------
+---
+
+## 🚧 Possíveis Melhorias
+
+- Exportação CSV  
+- Preview antes da exportação  
+- Personalização da estrutura  
+- Tema claro/escuro  
+
+---
 
 ### 📝 4. Representação textual
 
